@@ -52,7 +52,6 @@ def get_configurator():
         module, attr = conf.configurator_class.rsplit('.', 1)
         module = importlib.import_module(module)
         get_configurator._class = getattr(module, attr)()
-        print get_configurator._class
     return get_configurator._class
 get_configurator._class = None
 
