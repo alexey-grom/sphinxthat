@@ -35,7 +35,10 @@ class SearchQuerySet(object):
 
     def __getitem__(self, item):
         if isinstance(item, slice):
-            return self.clone(query=self.limit(item.start, item.stop - item.start))
+            count = item.stop - item.start
+            if not count:
+                return self.none()  # TODO: return queryset
+            return self.clone(query=self.limit(item.start, count))
         return iter(self)
 
     def __getattribute__(self, name):
