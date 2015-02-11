@@ -16,7 +16,7 @@ class Configurator(object):
         if index.meta.abstract:
             return ''
 
-        qs = index.get_queryset()
+        qs = index.indexing_queryset()
 
         context = {}
         context.update({

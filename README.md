@@ -7,6 +7,7 @@ sphinxthat
 
 - генерация конфига для sphinx на основе моделей
 - управление демоном sphinx
+- ограниченная поддержка CBV за счет дополнительного менеджера и QuerySet-like объекта (для django<1.7 нужно
 
 
 Пример использования
@@ -84,3 +85,10 @@ class CategoryIndex(SphinxIndex):
 ```
     
     
+- Использование QuerySet-like прокси (применим внутри CBV)
+ 
+ 
+ ```
+        qs = Torrent.search.all()
+        qs = qs.match(form.cleaned_data.get('query'))
+ ```

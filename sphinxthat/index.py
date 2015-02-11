@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 from os.path import join
-from weakref import WeakValueDictionary
+from weakref import WeakKeyDictionary
 
 from django.db.models.loading import get_model
 from django.utils import six
@@ -10,27 +10,41 @@ from sphinxthat import conf
 from sphinxthat import fields as search_fields
 
 
-class SphinxIndexRegister(object):
+class Register(object):
     _instance = None
-    _register = WeakValueDictionary()
+    _register_class = dict
 
     def __new__(cls, *more):
         if not cls._instance:
-            cls._instance = super(SphinxIndexRegister, cls).__new__(cls, *more)
+            cls._instance = super(Register, cls).__new__(cls, *more)
+            cls._instance._register = cls._register_class()
         return cls._instance
 
-    def add(self, Class):
-        assert issubclass(Class, SphinxIndexBase)
-        self._register[Class.__name__] = Class
+    def add(self, key, value):
+        assert issubclass(value, SphinxIndexBase)
+        self._register[key] = value
 
+
+class SphinxIndexRegister(Register):
     def indexes(self):
         return six.itervalues(self._register)
+
+
+class SphinxModelRegister(Register):
+    _register_class = WeakKeyDictionary
+
+    def __getitem__(self, item):
+        return self._register[item]
+
+    def __contains__(self, key):
+        return key in self._register
 
 
 class Properties(object):
     def __init__(self):
         self.abstract = False
         self.model = None
+        self.search_manager = 'search'
 
     def get_model(self):
         model = self.model
@@ -70,7 +84,7 @@ class SphinxIndexMeta(type):
         if not Class.meta.abstract:
             if not Class.meta.model:
                 raise TypeError('Model required for "{}"!'.format(Class.__name__))
-            SphinxIndexRegister().add(Class)
+            SphinxIndexRegister().add(Class.__name__, Class)
 
         return Class
 
@@ -80,14 +94,16 @@ class SphinxIndexBase(six.with_metaclass(SphinxIndexMeta, object)):
     meta = None
 
     @classmethod
-    def source_type(cls):
-        return 'mysql'
-
-    @classmethod
-    def get_queryset(cls):
+    def indexing_queryset(cls):
         return cls.meta.get_model().\
             objects.\
             values_list('id', *cls.fields.keys())
+
+    @classmethod
+    def search_queryset(cls, primary_keys):
+        return cls.meta.get_model().\
+            objects.\
+            filter(pk__in=primary_keys)
 
     @classmethod
     def index_name(cls):
@@ -96,6 +112,10 @@ class SphinxIndexBase(six.with_metaclass(SphinxIndexMeta, object)):
     @classmethod
     def index_path(cls):
         return join(conf.index_path, cls.index_name())
+
+    @classmethod
+    def source_type(cls):
+        return 'mysql'
 
     class Meta:
         abstract = True

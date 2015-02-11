@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-sphinx-that',
-    version='0.0.1',
+    version='0.0.2',
     description='sphinxit integration django',
     long_description=open('README.md').read(),
     author='Alexey Gromov',
